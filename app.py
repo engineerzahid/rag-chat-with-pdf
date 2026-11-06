@@ -1,5 +1,3 @@
-from tkinter.messagebox import QUESTION
-from unittest import result
 import streamlit as st
 from rag.pipeline import create_rag_pipeline, ask_question
 
@@ -10,7 +8,6 @@ with st.sidebar:
      st.title("Upload PDF Document")
      uploaded_files = st.file_uploader("Upload PDF", type=["pdf"], key="pdf_uploader", accept_multiple_files=True)
      if st.button("Process Files"):
-         st.spinner("Processing files...")
          if uploaded_files:
              files_path = []
              with st.spinner("Processing files..."):
