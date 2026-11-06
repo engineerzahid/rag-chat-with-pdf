@@ -1,119 +1,46 @@
-
 import streamlit as st
 from rag.pipeline import create_rag_pipeline, ask_question
 
-st.set_page_config(
-    page_title="RAG QA System",
-    page_icon=":books:"
-)
+st.set_page_config(page_title="RAG Chatbot", page_icon=":robot_face:", layout="wide")
+st.title("RAG Chatbot")
 
-st.title("RAG QA System")
-
-# Initialize Session State
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
 
 if "rag_ready" not in st.session_state:
     st.session_state.rag_ready = False
 
 
-# Sidebar: Upload PDF
 with st.sidebar:
+    st.header("Upload PDF Files")
+    uploaded_files = st.file_uploader("Choose PDF files", type="pdf", accept_multiple_files=True)
+    if uploaded_files:
+        files_path = []
+        for uploaded_file in uploaded_files:
+            with open(uploaded_file.name, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            files_path.append(uploaded_file.name)
+        vector_store, prompt, llm = create_rag_pipeline(files_path)
+        st.session_state.vector_store = vector_store
+        st.session_state.prompt = prompt
+        st.session_state.llm = llm
+        st.session_state.rag_ready = True
+        st.success("RAG pipeline is ready!")
 
-    st.title("Upload PDF Document")
+st.header("Ask a Question")
 
-    uploaded_files = st.file_uploader(
-        "Upload PDF",
-        type=["pdf"],
-        key="pdf_uploader",
-        accept_multiple_files=True
-    )
-
-    if st.button("Process Files"):
-
-        if uploaded_files:
-
-            files_path = []
-
-            try:
-                with st.spinner("Processing files..."):
-
-                    for uploaded_file in uploaded_files:
-
-                        with open(uploaded_file.name, "wb") as f:
-                            f.write(uploaded_file.getbuffer())
-
-                        files_path.append(uploaded_file.name)
-
-                    vector_store, prompt, llm = create_rag_pipeline(files_path)
-
-                    st.session_state.vector_store = vector_store
-                    st.session_state.prompt = prompt
-                    st.session_state.llm = llm
-
-                    st.session_state.rag_ready = True
-
-                st.success("Files processed successfully!")
-
-            except Exception as e:
-                st.session_state.rag_ready = False
-                st.error(f"Processing Error: {str(e)}")
-
-        else:
-            st.warning("Please upload at least one PDF file.")
-
-
-# Chat Section
-st.header("Ask Questions about the Document")
-
-
-# Display Previous Messages
-for message in st.session_state.messages:
-
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-
-# Chat Input
-if QUESTION := st.chat_input("Ask a question about the document"):
-
-    if not st.session_state.rag_ready:
-
-        st.warning("Please upload and process a PDF first.")
+if Question := st.chat_input("Type your question here..."):
+    if st.session_state.rag_ready:
+        result = ask_question(st.session_state.vector_store, st.session_state.prompt, st.session_state.llm, Question)
+        st.session_state.messages.append({"role": "user", "content": Question})
+        st.session_state.messages.append({"role": "assistant", "content": result["answer"]})
+        
+        st.chat_message("user").write(Question)
+        st.chat_message("assistant").write(result["answer"])
 
     else:
+        st.warning("Please upload PDF files to initialize the RAG pipeline.")
 
-        # Save User Question
-        st.session_state.messages.append({
-            "role": "user",
-            "content": QUESTION
-        })
 
-        with st.chat_message("user"):
-            st.markdown(QUESTION)
 
-        # Generate Assistant Answer
-        with st.chat_message("assistant"):
-
-            with st.spinner("Finding your answer..."):
-
-                try:
-                    result = ask_question(
-                        st.session_state.vector_store,
-                        st.session_state.prompt,
-                        st.session_state.llm,
-                        QUESTION
-                    )
-
-                    answer = result["answer"]
-
-                    st.markdown(answer)
-
-                    st.session_state.messages.append({
-                        "role": "assistant",
-                        "content": answer
-                    })
-
-                except Exception as e:
-
-                    st.error(f"Question Error: {str(e)}")
