@@ -43,4 +43,11 @@ if Question := st.chat_input("Type your question here..."):
         st.warning("Please upload PDF files to initialize the RAG pipeline.")
 
 
+for message in st.session_state.messages:
+    if message["role"] == "user":
+        st.chat_message("user").write(message["content"])
+    else:
+        st.chat_message("assistant").write(message["content"])
+
+
 
