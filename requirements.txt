@@ -4,6 +4,7 @@ langchain-community
 langchain-core
 langchain-groq
 langchain-text-splitters
+langchain-huggingface
 faiss-cpu
 sentence-transformers
 pypdf
